@@ -17,6 +17,8 @@ result in sending the "MULTI" command to the Redis server again.
 L</discard> is automatically called when an instance of
 L<Mojo::Redis2::Transaction> goes out of scope.
 
+See also L<http://redis.io/topics/transactions>.
+
 =head1 SYNOPSIS
 
   use Mojo::Redis2;
@@ -45,6 +47,20 @@ L<Mojo::Redis2::Transaction> inherits all attributes from L<Mojo::Redis2>.
 L<Mojo::Redis2::Transaction> inherits all methods from L<Mojo::Redis2> and
 implements the following new ones.
 
+=head2 discard
+
+  $self->discard;
+  $self->discard(sub { my ($self, $err, $res) = @_; });
+
+Discard all commands issued. This method is called automatically on DESTROY,
+unless L</exec> was called first.
+
+=cut
+
+sub discard {
+  shift->_execute_if_instructions(DISCARD => @_);
+}
+
 =head2 exec
 
   $self->exec;
@@ -60,19 +76,16 @@ sub exec {
   $self->_execute_if_instructions(EXEC => @_);
 }
 
-=head2 discard
+=head2 watch
 
-  $self->discard;
-  $self->discard(sub { my ($self, $err, $res) = @_; });
+  $self = $self->watch($key, $cb);
+  $res = $self->watch($key);
 
-Discard all commands issued. This method is called automatically on DESTROY,
-unless L</exec> was called first.
+Marks the given keys to be watched for conditional execution of a transaction.
 
 =cut
 
-sub discard {
-  shift->_execute_if_instructions(DISCARD => @_);
-}
+sub watch { shift->_execute(txn => WATCH => @_); }
 
 sub DESTROY {
   my $self = shift;
@@ -84,7 +97,7 @@ sub _blocking_group { 'txn' }
 sub _execute {
   my ($self, $group, $op) = (shift, shift, shift);
 
-  if (!grep { $op eq $_ } qw( EXEC DISCARD ) and !$self->{instructions}++) {
+  if (!grep { $op eq $_ } qw( DISCARD EXEC WATCH ) and !$self->{instructions}++) {
     $self->{exec} = 0;
     $self->{connections}{txn} ||= { group => 'txn', nb => ref $_[-1] eq 'CODE' ? 1 : 0 };
     push @{ $self->{connections}{txn}{queue} }, [ undef, 'MULTI' ];

@@ -10,6 +10,7 @@ script/try-mojo-redis2.pl
 t/00-basic.t
 t/all-basic-operations.t
 t/basic-operations.t
+t/blocking-operations.t
 t/constructor.t
 t/lite.t
 t/pubsub.t

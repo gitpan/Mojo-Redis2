@@ -6,7 +6,7 @@ Mojo::Redis2 - Pure-Perl non-blocking I/O Redis driver
 
 =head1 VERSION
 
-0.02
+0.03
 
 =head1 DESCRIPTION
 
@@ -132,7 +132,7 @@ use constant DEBUG => $ENV{MOJO_REDIS_DEBUG} || 0;
 use constant SERVER_DEBUG => $ENV{MOJO_REDIS_SERVER_DEBUG} || 0;
 use constant DEFAULT_PORT => 6379;
 
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 
 my $PROTOCOL_CLASS = do {
   my $class = $ENV{MOJO_REDIS_PROTOCOL} ||= eval "require Protocol::Redis::XS; 'Protocol::Redis::XS'" || 'Protocol::Redis';
@@ -272,6 +272,38 @@ sub new {
 
   $self;
 }
+
+=head2 blpop
+
+  $self = $self->blpop(@keys, $timeout, sub { my ($self, $res) = @_; });
+
+This method will issue the BLPOP command on the Redis server, but in its
+own connection. This means that C<$self> can still be used to run other
+L<commands|/METHODS> instead of being blocking.
+
+Note: This method will only work in a non-blocking environment.
+
+See also L<http://redis.io/commands/blpop>.
+
+=head2 brpoplpush
+
+  $self = $self->brpoplpush($from => $to, $timeout, sub { my ($self, $res) = @_; });
+
+Follows the same API as L</blpop>.
+See also L<http://redis.io/commands/brpoplpush>.
+
+=head2 brpop
+
+  $self = $self->brpop(@keys, $timeout, sub { my ($self, $res) = @_; });
+
+Follows the same API as L</blpop>.
+See also L<http://redis.io/commands/brpop>.
+
+=cut
+
+sub blpop { shift->_execute(blpop => BLPOP => @_); }
+sub brpop { shift->_execute(brpop => BRPOP => @_); }
+sub brpoplpush { shift->_execute(brpoplpush => BRPOPLPUSH => @_); }
 
 =head2 multi
 
