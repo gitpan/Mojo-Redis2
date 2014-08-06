@@ -6,7 +6,7 @@ Mojo::Redis2 - Pure-Perl non-blocking I/O Redis driver
 
 =head1 VERSION
 
-0.01
+0.02
 
 =head1 DESCRIPTION
 
@@ -124,6 +124,7 @@ empty string on success.
 
 use Mojo::Base 'Mojo::EventEmitter';
 use Mojo::IOLoop;
+use Mojo::Redis2::Transaction;
 use Mojo::URL;
 use Mojo::Util;
 use Carp ();
@@ -131,7 +132,7 @@ use constant DEBUG => $ENV{MOJO_REDIS_DEBUG} || 0;
 use constant SERVER_DEBUG => $ENV{MOJO_REDIS_SERVER_DEBUG} || 0;
 use constant DEFAULT_PORT => 6379;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 my $PROTOCOL_CLASS = do {
   my $class = $ENV{MOJO_REDIS_PROTOCOL} ||= eval "require Protocol::Redis::XS; 'Protocol::Redis::XS'" || 'Protocol::Redis';
@@ -272,6 +273,24 @@ sub new {
   $self;
 }
 
+=head2 multi
+
+  $txn = $self->multi;
+
+This method does not perform the "MULTI" Redis command, but returns a
+L<Mojo::Redis2::Transaction> object instead.
+
+The L<Mojo::Redis2::Transaction> object is a subclass of L<Mojo::Redis2>,
+which will run all the Redis commands inside a transaction.
+
+=cut
+
+sub multi {
+  my $self = shift;
+  my @attributes = qw( encoding protocol url );
+  Mojo::Redis2::Transaction->new(map { $_ => $self->$_ } @attributes);
+}
+
 =head2 psubscribe
 
   $self = $self->psubscribe(@patterns, sub { my ($self, $err, $res) = @_; ... });
@@ -321,7 +340,7 @@ in the input C<%config>.
 
 =back
 
-The L<MOJO_REDIS_URL/url> environment variable is also set unless defined
+The L<MOJO_REDIS_URL|/url> environment variable is also set unless defined
 up front.
 
 =cut
@@ -378,6 +397,8 @@ sub start_server {
 }
 
 sub DESTROY { $_[0]->{destroy} = 1; $_[0]->_cleanup; }
+
+sub _blocking_group { 'blocking' }
 
 sub _cleanup {
   my $self = shift;
@@ -445,7 +466,7 @@ sub _dequeue {
     return $self;
   }
 
-  push @{ $c->{waiting} }, pop @$queue;
+  push @{ $c->{waiting} }, shift @$queue;
   $buf = $self->_op_to_command($c->{waiting}[-1]);
   do { local $_ = $buf; s!\r\n!\\r\\n!g; warn "[$c->{name}] <<< ($_)\n" } if DEBUG;
   $stream->write($buf);
@@ -477,7 +498,7 @@ sub _execute {
     return $self->_dequeue($c);
   }
   else {
-    my $c = $self->{connections}{blocking} ||= { nb => 0, group => 'blocking' };
+    my $c = $self->{connections}{$self->_blocking_group} ||= { nb => 0, group => $self->_blocking_group };
     my ($err, $res);
 
     push @{ $c->{queue} }, [sub { shift->_loop(0)->stop; ($err, $res) = @_; }, @cmd];

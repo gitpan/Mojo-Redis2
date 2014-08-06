@@ -32,7 +32,8 @@
       },
       "runtime" : {
          "requires" : {
-            "Mojolicious" : "5.0"
+            "Mojolicious" : "5.0",
+            "Protocol::Redis" : "1.0"
          }
       }
    },
@@ -46,5 +47,5 @@
          "url" : "https://github.com/jhthorsen/mojo-redis2.git"
       }
    },
-   "version" : "0.01"
+   "version" : "0.02"
 }

@@ -1,5 +1,10 @@
 Revision history for Mojo-Redis2
 
+0.02     Wed Aug  6 10:20:32 2014
+       * Fix the order commands are sent
+       * Fix missing dependency: Protocol::Redis
+       * Add support for transactions
+
 0.01     Tue Aug  5 13:32:27 2014
        * Started project
        * Add blocking support
