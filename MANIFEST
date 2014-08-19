@@ -1,4 +1,5 @@
 .ship.conf
+.travis.yml
 Changes
 cpanfile
 lib/Mojo/Redis2.pm

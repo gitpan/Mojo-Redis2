@@ -6,7 +6,7 @@ Mojo::Redis2 - Pure-Perl non-blocking I/O Redis driver
 
 =head1 VERSION
 
-0.0401
+0.05
 
 =head1 DESCRIPTION
 
@@ -132,7 +132,7 @@ use constant DEBUG => $ENV{MOJO_REDIS_DEBUG} || 0;
 use constant SERVER_DEBUG => $ENV{MOJO_REDIS_SERVER_DEBUG} || 0;
 use constant DEFAULT_PORT => 6379;
 
-our $VERSION = '0.0401';
+our $VERSION = '0.05';
 
 my $PROTOCOL_CLASS = do {
   my $class = $ENV{MOJO_REDIS_PROTOCOL} ||= eval "require Protocol::Redis::XS; 'Protocol::Redis::XS'" || 'Protocol::Redis';
@@ -164,6 +164,21 @@ for my $method (
 my %SERVER;
 
 =head1 EVENTS
+
+=head2 connection
+
+  $self->on(error => sub { my ($self, $info) = @_; ... });
+
+Emitted when a new connection has been established. C<$info> is a hash ref
+with:
+
+  {
+    group => $str, # basic, blpop, brpop, brpoplpush, publish, ...
+    id => $connection_id,
+    nb => $bool, # blocking/non-blocking
+  }
+
+Note: The structure of C<$info> is EXPERIMENTAL.
 
 =head2 error
 
@@ -474,6 +489,7 @@ sub _connect {
       unshift @{ $c->{queue} }, [ undef, SELECT => $db ] if $db;
       unshift @{ $c->{queue} }, [ undef, AUTH => $userinfo[1] ] if length $userinfo[1];
 
+      $self->emit_safe(connection => { map { $_ => $c->{$_} } qw( group id nb ) });
       $self->_dequeue($c);
     },
   );
