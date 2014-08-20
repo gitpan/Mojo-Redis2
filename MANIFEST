@@ -3,6 +3,8 @@
 Changes
 cpanfile
 lib/Mojo/Redis2.pm
+lib/Mojo/Redis2/Bulk.pm
+lib/Mojo/Redis2/Client.pm
 lib/Mojo/Redis2/Transaction.pm
 Makefile.PL
 MANIFEST			This list of files
@@ -12,6 +14,8 @@ t/00-basic.t
 t/all-basic-operations.t
 t/basic-operations.t
 t/blocking-operations.t
+t/bulk.t
+t/client.t
 t/constructor.t
 t/lite.t
 t/pubsub.t
