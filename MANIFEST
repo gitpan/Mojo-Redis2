@@ -3,6 +3,7 @@
 Changes
 cpanfile
 lib/Mojo/Redis2.pm
+lib/Mojo/Redis2/Backend.pm
 lib/Mojo/Redis2/Bulk.pm
 lib/Mojo/Redis2/Client.pm
 lib/Mojo/Redis2/Server.pm
@@ -13,10 +14,12 @@ README
 script/try-mojo-redis2.pl
 t/00-basic.t
 t/all-basic-operations.t
+t/backend.t
 t/basic-operations.t
 t/blocking-operations.t
 t/bulk.t
 t/client.t
+t/config.t
 t/constructor.t
 t/lite.t
 t/pubsub.t

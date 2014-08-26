@@ -6,7 +6,7 @@ Mojo::Redis2 - Pure-Perl non-blocking I/O Redis driver
 
 =head1 VERSION
 
-0.09
+0.10
 
 =head1 DESCRIPTION
 
@@ -131,7 +131,7 @@ use Carp ();
 use constant DEBUG => $ENV{MOJO_REDIS_DEBUG} || 0;
 use constant DEFAULT_PORT => 6379;
 
-our $VERSION = '0.09';
+our $VERSION = '0.10';
 
 my $PROTOCOL_CLASS = do {
   my $class = $ENV{MOJO_REDIS_PROTOCOL} ||= eval "require Protocol::Redis::XS; 'Protocol::Redis::XS'" || 'Protocol::Redis';
@@ -323,6 +323,20 @@ sub client {
   my $self = shift;
   require Mojo::Redis2::Client;
   Mojo::Redis2::Client->new(_redis => $self);
+}
+
+=head2 backend
+
+  $self->backend->$method(@args);
+
+Run server commands (CONFIG, INFO, SAVE, ...) using L<Mojo::Redis2::Backend>.
+
+=cut
+
+sub backend {
+  my $self = shift;
+  require Mojo::Redis2::Backend;
+  Mojo::Redis2::Backend->new(_redis => $self);
 }
 
 =head2 multi
