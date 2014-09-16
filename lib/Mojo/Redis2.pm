@@ -6,7 +6,7 @@ Mojo::Redis2 - Pure-Perl non-blocking I/O Redis driver
 
 =head1 VERSION
 
-0.11
+0.12
 
 =head1 DESCRIPTION
 
@@ -131,7 +131,7 @@ use Carp ();
 use constant DEBUG => $ENV{MOJO_REDIS_DEBUG} || 0;
 use constant DEFAULT_PORT => 6379;
 
-our $VERSION = '0.11';
+our $VERSION = '0.12';
 
 my $PROTOCOL_CLASS = do {
   my $class = $ENV{MOJO_REDIS_PROTOCOL} ||= eval "require Protocol::Redis::XS; 'Protocol::Redis::XS'" || 'Protocol::Redis';
@@ -266,7 +266,7 @@ sub new {
 
 =head2 blpop
 
-  $self = $self->blpop(@keys, $timeout, sub { my ($self, $res) = @_; });
+  $self = $self->blpop(@keys, $timeout, sub { my ($self, $err, $res) = @_; });
 
 This method will issue the BLPOP command on the Redis server, but in its
 own connection. This means that C<$self> can still be used to run other
@@ -276,19 +276,19 @@ Note: This method will only work in a non-blocking environment.
 
 See also L<http://redis.io/commands/blpop>.
 
-=head2 brpoplpush
-
-  $self = $self->brpoplpush($from => $to, $timeout, sub { my ($self, $res) = @_; });
-
-Follows the same API as L</blpop>.
-See also L<http://redis.io/commands/brpoplpush>.
-
 =head2 brpop
 
-  $self = $self->brpop(@keys, $timeout, sub { my ($self, $res) = @_; });
+  $self = $self->brpop(@keys, $timeout, sub { my ($self, $err, $res) = @_; });
 
 Follows the same API as L</blpop>.
 See also L<http://redis.io/commands/brpop>.
+
+=head2 brpoplpush
+
+  $self = $self->brpoplpush($from => $to, $timeout, sub { my ($self, $err, $res) = @_; });
+
+Follows the same API as L</blpop>.
+See also L<http://redis.io/commands/brpoplpush>.
 
 =cut
 
@@ -444,7 +444,7 @@ sub _connect {
       warn "[$c->{name}] connected\n" if DEBUG;
 
       $stream->timeout(0);
-      $stream->on(close => sub { $self->_error($c) });
+      $stream->on(close => sub { $self and $self->_error($c) });
       $stream->on(error => sub { $self and $self->_error($c, $_[1]) });
       $stream->on(read => sub { $self->_read($c, $_[1]) });
 
@@ -452,7 +452,7 @@ sub _connect {
       unshift @{ $c->{queue} }, [ undef, SELECT => $db ] if $db;
       unshift @{ $c->{queue} }, [ undef, AUTH => $userinfo[1] ] if length $userinfo[1];
 
-      $self->emit_safe(connection => { map { $_ => $c->{$_} } qw( group id nb ) });
+      $self->emit(connection => { map { $_ => $c->{$_} } qw( group id nb ) });
       $self->_dequeue($c);
     },
   );
@@ -492,7 +492,7 @@ sub _error {
 
   return if $self->{destroy};
   return $self->_connect($c) unless defined $err;
-  return $self->emit_safe(error => $err) unless @$waiting;
+  return $self->emit(error => $err) unless @$waiting;
   return $self->$_($err, []) for grep { $_ } map { $_->[0] } @$waiting;
 }
 
