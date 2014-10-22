@@ -20,6 +20,7 @@ t/blocking-operations.t
 t/bulk.t
 t/client.t
 t/config.t
+t/connection-refused.t
 t/constructor.t
 t/lite.t
 t/pubsub.t
